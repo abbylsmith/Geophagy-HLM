@@ -8,3 +8,5 @@ Longitudinal examination of pica (the eating/craving of non-food items) in pregn
 
 <code>reproduce_plot.R</code>: creates a plot that shows the distinction between "between" and "within" hemoglobin changes in women
 
+# USEFUL RESOURCES:
+cite van Buuren book, hmi package here
