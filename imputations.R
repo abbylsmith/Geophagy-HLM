@@ -4,6 +4,7 @@ require(readxl)
 
 #imputation packages utilized
 require(mice)
+####SHOULD CHANGE THIS PATH SO THAT THE FILE IS PULLED FROM THE GITHUB FOLDER AND NOT FROM YOUR PERSONAL DESKTOP####
 install.packages("C:/Users/Acer/Documents/hmi_0.9.8.zip", repos = NULL, type = "source")
 library("hmi")
 
@@ -12,6 +13,7 @@ library("hmi")
 pica_df <- data.frame(read_excel("Pica_Longitudinal_2018_02_15_kf.xlsx"))
 
 # we center all time-variant variables
+##I THINK THESE NEED TO BE GROUP MEAN CENTERED SINCE THEY ARE LEVEL 1 PREDICTORS##
 pica_df$hemo_c <- pica_df$hemo - mean(pica_df$hemo,na.rm = T)
 pica_df$fepill_c <- pica_df$fepill - mean(pica_df$fepill,na.rm = T)
 pica_df$fefood_c <- pica_df$fefood - mean(pica_df$fefood,na.rm = T)
@@ -68,6 +70,8 @@ hmi_imp <- hmi(data = pica_df[,c('geo','pid', 'hemo_c', 'amylo_c', 'hhs_c', 'str
 
 #######ADDING DERIVED VARIABLES TO HMI IMPUTATIONS#######
 
+##NEED TO CHANGE THE NAMES HERE TO BE CONSISTENT. geo_final SHOULD BE THE SAME THING AS HMI_IMP ABOVE?
+##SHOULD CHANGE NAME OF "final_big_imp_hmi.rds" TO JUST "final_imp_hmi.rds" 
 geo_final <- readRDS("final_big_imp_hmi.rds")
 
 #checks of model convergence
@@ -91,6 +95,7 @@ geo_complete$fefood_yn <- ifelse((geo_complete$fefood > 0),1,0)
 
 geo_complete <- split(geo_complete,geo_complete$.imp)
 add_wealth <- function(subset_imp){
+  ##WHY DO WE CREATE hemo_avg INSIDE THIS add_wealth() FUNCTION?
   subset_imp <- subset_imp %>% group_by(pid) %>% mutate(hemo_avg=(mean(hemo,na.rm = T)))
   subset_imp$wealth <- ifelse(subset_imp$asset_index > quantile(subset_imp$asset_index, 
                                                                 probs = seq(0,1,1/3),na.rm = T)[3],3,
@@ -109,7 +114,9 @@ geo_complete <- rbindlist(geo_complete_list) #using function from data.table
 ##KATIE: Can you make sure the predictor matrix includes:amylo_child", "fias", "geo_child", "gravidity", "hhloc", "other_child", 
 #"parity", "religion", "site", "tribe", "anemic", "dep_cat", "fefood_yn", "fi_tert", "gidis_yn", "pica_child", "pica_yn", "wealth"
 
-prediction_matrix <- as.matrix(data.frame(read_excel("pica_wide_prediction_matrix.xlsx")))
+##THE NEW FILE "prediction_matrix.xlsx" HAS ALL THE VARIABLES YOU MENTION UP TO TRIBE, STARTING WITH ANEMIC THE REST ARE DERIVED SO THEY ARE ADDED IN AFTER THE IMPUTATIONS
+
+prediction_matrix <- as.matrix(data.frame(read_excel("prediction_matrix.xlsx")))
 rownames(prediction_matrix) <- prediction_matrix[,1]
 
 # Add a variable for how many times the id*cat combination has occured
@@ -193,6 +200,8 @@ expand <- full_time_invariant[rep(seq_len(nrow(full_time_invariant)), each=9),]
 expand$time <- rep(1:9, times=371)
 
 ###KATIE: WHAT IS THIS DOING##
+##MICE AUTOMATICALLY DROPS VARIABLES AND DOESN'T IMPUTE IF A VARIABLE IS CONSTANT FOR ALL OBSERVATIONS. 
+##SO SINCE PREG_1=1 FOR ALL OBSERVED PARTICIPANTS, IT DIDN'T IMPUTE MISSING VALUES FOR PREG_1, SO I'M DOING THIS MANUALLY
 imp_full<-merge(full_time_variant,expand,by=c("pid",".imp","time"))
 imp_full$preg[imp_full$time == 1] <- 1
 imp_full$preg[imp_full$time == 3] <- 0
